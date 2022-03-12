@@ -10,7 +10,8 @@ OSStatus CoreAudioGetBufferSize(AudioDeviceID Device, UInt32* BufferSize)
 {
   AudioObjectPropertyAddress Property =
   {
-    kAudioDevicePropertyBufferFrameSize,
+    kAudioDevicePropertyBufferFrameSize, // NOTE(robin): This is the thing you care about
+
     kAudioObjectPropertyScopeGlobal,
     kAudioObjectPropertyElementMaster,
   };
@@ -26,6 +27,7 @@ OSStatus CoreAudioSetBufferSize(AudioDeviceID Device, UInt32 BufferSize)
   AudioObjectPropertyAddress Property =
   {
     kAudioDevicePropertyBufferFrameSize,
+
     kAudioObjectPropertyScopeGlobal,
     kAudioObjectPropertyElementMaster,
   };
@@ -41,6 +43,7 @@ OSStatus CoreAudioGetSampleRate(AudioDeviceID Device, double* SampleRate)
   AudioObjectPropertyAddress Property =
   {
     kAudioDevicePropertyNominalSampleRate,
+
     kAudioObjectPropertyScopeGlobal,
     kAudioObjectPropertyElementMaster,
   };
@@ -57,6 +60,7 @@ OSStatus CoreAudioGetSampleFormat(AudioDeviceID Device, AudioStreamBasicDescript
   {
     // TODO(robin): This should probably be kAudioStreamPropertyVirtualFormat
     kAudioDevicePropertyStreamFormat,
+
     kAudioObjectPropertyScopeGlobal,
     kAudioObjectPropertyElementMaster,
   };
@@ -72,6 +76,7 @@ OSStatus CoreAudioGetDefaultOutputDevice(AudioDeviceID* Device)
   AudioObjectPropertyAddress Property =
   {
     kAudioHardwarePropertyDefaultOutputDevice,
+
     kAudioObjectPropertyScopeGlobal,
     kAudioObjectPropertyElementMaster,
   };
@@ -87,6 +92,7 @@ OSStatus CoreAudioGetDefaultInputDevice(AudioDeviceID* Device)
   AudioObjectPropertyAddress Property =
   {
     kAudioHardwarePropertyDefaultInputDevice,
+
     kAudioObjectPropertyScopeGlobal,
     kAudioObjectPropertyElementMaster,
   };
