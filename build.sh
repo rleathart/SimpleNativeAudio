@@ -18,11 +18,15 @@ if [ `uname` == "Darwin" ]; then
 fi
 
 if [ `uname` == "Linux" ]; then
-  echo Linux!
   JackFlags="
   -ljack
+  -lm
   "
-  clang $CommonFlags $JackFlags ../src/jack_example.c -o jack_example
+  AlsaFlags="
+  -lasound
+  -lm
+  "
+  clang $CommonFlags $AlsaFlags ../src/alsa_example.c -o alsa_example
 fi
 
 ErrorCode=$?
