@@ -25,11 +25,11 @@ int AudioCallback(uint32_t FrameCount, void* Context)
 {
   jack_callback_data* JackData = Context;
 
-	float* Left = jack_port_get_buffer(JackData->OutputPorts[0], FrameCount);
-	float* Right = jack_port_get_buffer(JackData->OutputPorts[1], FrameCount);
+  float* Left = jack_port_get_buffer(JackData->OutputPorts[0], FrameCount);
+  float* Right = jack_port_get_buffer(JackData->OutputPorts[1], FrameCount);
 
   // NOTE(robin): Data for the first channel of input
-	float* Input1 = jack_port_get_buffer(JackData->InputPorts[0], FrameCount);
+  float* Input1 = jack_port_get_buffer(JackData->InputPorts[0], FrameCount);
 
   float SampleRate = jack_get_sample_rate(JackData->JackClient);
 
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
   // NOTE(robin): Audio outputs
   // NOTE(robin): JackPortIsInput refers to an input to the backend. Thus
   // outputs from our program are inputs to the backend and vice versa.
-	JackPorts = jack_get_ports(JackData.JackClient, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
+  JackPorts = jack_get_ports(JackData.JackClient, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
   assert(JackPorts);
 
   for (int i = 0; i < 2; i++)
@@ -103,11 +103,11 @@ int main(int argc, char** argv)
     assert(!Error);
   }
 
-	jack_free(JackPorts);
+  jack_free(JackPorts);
 
   // NOTE(robin): Audio inputs
-	JackPorts = jack_get_ports(JackData.JackClient, NULL, NULL,
-				JackPortIsPhysical|JackPortIsOutput);
+  JackPorts = jack_get_ports(JackData.JackClient, NULL, NULL,
+      JackPortIsPhysical|JackPortIsOutput);
   assert(JackPorts);
 
   for (int i = 0; i < 2; i++)
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
     assert(!Error);
   }
 
-	jack_free(JackPorts);
+  jack_free(JackPorts);
 
   sleep(3);
 
