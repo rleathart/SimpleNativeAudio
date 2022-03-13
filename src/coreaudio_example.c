@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
   CoreAudioGetBufferSize(InputDeviceID, &BufferSize);
   printf("Actual input buffer size was set to: %d\n", BufferSize);
 
-  // NOTE(robin): We have a seperate callback for audio input and output since
+  // NOTE(robin): We have a separate callback for audio input and output since
   // CoreAudio sees the input/output as separate devices.
   AudioDeviceIOProcID OutputIOProcID = NULL;
   AudioDeviceIOProcID InputIOProcID = NULL;
