@@ -5,9 +5,7 @@
 #include <audioclient.h>
 #include <avrt.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 
 #pragma comment(lib, "ole32")
 #pragma comment(lib, "avrt")
@@ -78,7 +76,8 @@ void AudioInputCallback(int FrameCount, wasapi_data* Data)
 
         default:
         {
-          assert(!"Unsupported sample format!");
+          printf("Unsupported sample format! %d bytes per sample\n", BytesPerSample);
+          ExitProcess(1);
         }
       }
 
@@ -159,7 +158,8 @@ void AudioOutputCallback(int FrameCount, wasapi_data* Data)
 
         default:
         {
-          assert(!"Unsupported sample format!");
+          printf("Unsupported sample format! %d bytes per sample\n", BytesPerSample);
+          ExitProcess(1);
         }
       }
     }
