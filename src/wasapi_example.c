@@ -255,7 +255,7 @@ int main(int argc, char** argv)
 
   int BufferSize = 512; // NOTE(robin): In samples
 
-  // NOTE(robin): WASAPI expects buffer sizes to be specifies in terms of a duration
+  // NOTE(robin): WASAPI expects buffer sizes to be specified in terms of a duration
   // as a multiple of 100ns intervals.
   double HundredNanosecondsPerSample = 10000000.0 / OutputSampleFormat->nSamplesPerSec;
   long long BufferDuration = BufferSize * HundredNanosecondsPerSample;
