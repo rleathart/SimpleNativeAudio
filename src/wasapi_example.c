@@ -282,6 +282,10 @@ int main(int argc, char** argv)
   IAudioClient_GetBufferSize(OutputClient, (LPDWORD)&BufferSize);
   printf("Buffer size: %d\n", BufferSize);
   printf("Sample rate: %d\n", OutputSampleFormat->nSamplesPerSec);
+  printf("Output channels: %d\n", OutputSampleFormat->nChannels);
+  printf("Output bit depth: %d\n", OutputSampleFormat->wBitsPerSample);
+  printf("Input channels: %d\n", InputSampleFormat->nChannels);
+  printf("Input bit depth: %d\n", InputSampleFormat->wBitsPerSample);
 
   IAudioRenderClient* AudioRenderClient;
   IAudioClient_GetService(OutputClient, &IID_IAudioRenderClient, &AudioRenderClient);
@@ -289,9 +293,9 @@ int main(int argc, char** argv)
   IAudioCaptureClient* AudioCaptureClient;
   IAudioClient_GetService(InputClient, &IID_IAudioCaptureClient, &AudioCaptureClient);
 
-  HANDLE AudioCallbackEvent = CreateEvent(0, 0, 0, 0);
+  HANDLE AudioOutputCallbackEvent = CreateEvent(0, 0, 0, 0);
   HANDLE AudioInputCallbackEvent = CreateEvent(0, 0, 0, 0);
-  IAudioClient_SetEventHandle(OutputClient, AudioCallbackEvent);
+  IAudioClient_SetEventHandle(OutputClient, AudioOutputCallbackEvent);
   IAudioClient_SetEventHandle(InputClient, AudioInputCallbackEvent);
 
   wasapi_data WASAPIData = {0};
@@ -313,7 +317,7 @@ int main(int argc, char** argv)
   // NOTE(robin): You would have this in another high priority thread
   for (;;)
   {
-    WaitForSingleObject(AudioCallbackEvent, INFINITE);
+    WaitForSingleObject(AudioOutputCallbackEvent, INFINITE);
     AudioOutputCallback(BufferSize, &WASAPIData);
     WaitForSingleObject(AudioInputCallbackEvent, INFINITE);
     AudioInputCallback(BufferSize, &WASAPIData);
