@@ -3,12 +3,14 @@
 #include <Windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
+#include <avrt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
 
 #pragma comment(lib, "ole32")
+#pragma comment(lib, "avrt")
 
 typedef struct
 {
@@ -20,6 +22,7 @@ typedef struct
   WAVEFORMATEX* OutputFormat;
 } wasapi_data;
 
+// NOTE(robin): We write data from the input device into this global buffer
 float MicData[2048];
 int MicIndex;
 
@@ -34,13 +37,14 @@ void AudioInputCallback(int FrameCount, wasapi_data* Data)
   int ChannelCount = Data->InputFormat->nChannels;
 
   MicIndex = 0;
-  int ChannelSelect = 0;
+  int ChannelSelect = 0; // NOTE(robin): Which input to write into the global buffer
 
   for (int FrameIndex = 0; FrameIndex < FrameCount; FrameIndex++)
   {
     for (int i = 0; i < ChannelCount; i++)
     {
       int SampleIndex = FrameIndex * ChannelCount + i;
+      float Sample = 0;
 
       // NOTE(robin): Convert the hardware format to 32 bit float
       switch (BytesPerSample)
@@ -49,37 +53,27 @@ void AudioInputCallback(int FrameCount, wasapi_data* Data)
         {
           short* InputBuffer = (short*)AudioBuffer;
           short InputSample = InputBuffer[SampleIndex];
-          float Sample = InputSample / (float)0x7FFF;
-
-          if (i == ChannelSelect)
-            MicData[MicIndex++] = Sample;
+          Sample = InputSample / (float)0x7FFF;
         } break;
 
         case 3: // NOTE(robin): 24 bit
         {
           char* InputBuffer = AudioBuffer + 3 * SampleIndex;
-
-          float Sample = 0;
-          char* SampleBytes = (char*)&Sample;
+          int IntSample = 0;
+          char* SampleBytes = (char*)&IntSample;
 
           SampleBytes[0] = InputBuffer[0];
           SampleBytes[1] = InputBuffer[1];
           SampleBytes[2] = InputBuffer[2];
 
-          Sample /= (float)0x7FFFFF;
-
-          if (i == ChannelSelect)
-            MicData[MicIndex++] = Sample;
+          Sample = IntSample / (float)0x7FFFFF;
         } break;
 
         case 4: // NOTE(robin): 32 bit
         {
           int* InputBuffer = (int*)AudioBuffer;
           short InputSample = InputBuffer[SampleIndex];
-          float Sample = InputSample / (float)0x7FFFFFFF;
-
-          if (i == ChannelSelect)
-            MicData[MicIndex++] = Sample;
+          Sample = InputSample / (float)0x7FFFFFFF;
         } break;
 
         default:
@@ -87,13 +81,16 @@ void AudioInputCallback(int FrameCount, wasapi_data* Data)
           assert(!"Unsupported sample format!");
         }
       }
+
+      if (i == ChannelSelect)
+        MicData[MicIndex++] = Sample;
     }
   }
 
   IAudioCaptureClient_ReleaseBuffer(Data->AudioCaptureClient, FrameCount);
 }
 
-void AudioCallback(int FrameCount, wasapi_data* Data)
+void AudioOutputCallback(int FrameCount, wasapi_data* Data)
 {
   BYTE* AudioBuffer;
   IAudioRenderClient_GetBuffer(Data->AudioRenderClient, FrameCount, &AudioBuffer);
@@ -128,6 +125,9 @@ void AudioCallback(int FrameCount, wasapi_data* Data)
     for (int i = 0; i < 2; i++)
     {
       int SampleIndex = FrameIndex * 2 + i;
+
+      // NOTE(robin): Uncomment to write some input to the output
+      // Samples[0] = MicData[FrameIndex];
 
       // NOTE(robin): Convert our 32 bit float samples to the hardware format
       switch (BytesPerSample)
@@ -305,13 +305,18 @@ int main(int argc, char** argv)
   IAudioClient_Start(OutputClient);
   IAudioClient_Start(InputClient);
 
+  // NOTE(robin): Tell the OS scheduler that we're doing pro-audio stuff in this thread
+  // in a hope to have fewer buffer underflows.
+  DWORD TaskIndex = 0;
+  AvSetMmThreadCharacteristicsA("Pro Audio", &TaskIndex);
+
   // NOTE(robin): You would have this in another high priority thread
   for (;;)
   {
+    WaitForSingleObject(AudioCallbackEvent, INFINITE);
+    AudioOutputCallback(BufferSize, &WASAPIData);
     WaitForSingleObject(AudioInputCallbackEvent, INFINITE);
     AudioInputCallback(BufferSize, &WASAPIData);
-    WaitForSingleObject(AudioCallbackEvent, INFINITE);
-    AudioCallback(BufferSize, &WASAPIData);
   }
 
   IAudioClient_Stop(OutputClient);
