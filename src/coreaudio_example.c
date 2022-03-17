@@ -103,6 +103,9 @@ OSStatus CoreAudioGetDefaultInputDevice(AudioDeviceID* Device)
   return Result;
 }
 
+float MicBuffer[512];
+int MicIndex;
+
 // IMPORTANT(robin): You may need to give microphone permissions to this program or
 // run as root to be able to access the microphone samples.
 OSStatus AudioInputCallback(AudioDeviceID Device,
@@ -116,11 +119,26 @@ OSStatus AudioInputCallback(AudioDeviceID Device,
   UInt32 FrameCount = 0;
   CoreAudioGetBufferSize(Device, &FrameCount);
 
-  float* InputBuffer = (float*)InputData->mBuffers[0].mData;
+  AudioStreamBasicDescription StreamFormat = {0};
+  CoreAudioGetSampleFormat(Device, &StreamFormat);
 
-  for (UInt32 i = 0; i < FrameCount; i++)
+  UInt32 StreamIsFloat = StreamFormat.mFormatFlags & kAudioFormatFlagIsFloat;
+  UInt32 SampleRate = StreamFormat.mSampleRate;
+  UInt32 BytesPerSample = StreamFormat.mBytesPerFrame / StreamFormat.mChannelsPerFrame;
+  UInt32 ChannelCount = InputData->mBuffers[0].mNumberChannels;
+
+  MicIndex = 0;
+  int MicChannelIndex = 0;
+  float* InputBuffer = (float*)InputData->mBuffers[0].mData;
+  for (UInt32 FrameIndex = 0; FrameIndex < FrameCount; FrameIndex++)
   {
-    float Sample = InputBuffer[i];
+    for (UInt32 ChannelIndex = 0; ChannelIndex < ChannelCount; ChannelIndex++)
+    {
+      int SampleIndex = FrameIndex * ChannelCount + ChannelIndex;
+      float Sample = InputBuffer[SampleIndex];
+      if (ChannelIndex == MicChannelIndex)
+        MicBuffer[MicIndex++] = Sample;
+    }
   }
 
   return 0;
@@ -178,6 +196,9 @@ OSStatus AudioOutputCallback(AudioDeviceID Device,
     float Volume = 0.2;
     OutputBuffer[SampleIndex + 0] = Volume * sin(Phase[0] * 2 * M_PI); // NOTE(robin): Left
     OutputBuffer[SampleIndex + 1] = Volume * sin(Phase[1] * 2 * M_PI); // NOTE(robin): Right
+
+    OutputBuffer[SampleIndex + 0] = MicBuffer[i];
+    OutputBuffer[SampleIndex + 1] = MicBuffer[i];
   }
 
   return 0;
@@ -196,7 +217,7 @@ int main(int argc, char* argv[])
   printf("Default output buffer size: %d\n", BufferSize);
 
   // NOTE(robin): Now override the default buffer size to anything you want
-  BufferSize = 128;
+  BufferSize = 64;
   CoreAudioSetBufferSize(OutputDeviceID, BufferSize);
   CoreAudioSetBufferSize(InputDeviceID, BufferSize);
 
