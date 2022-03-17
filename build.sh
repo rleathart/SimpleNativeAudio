@@ -22,6 +22,7 @@ if [ `uname` == "Linux" ]; then
   -ljack
   -lm
   "
+  clang $CommonFlags $JackFlags ../src/jack_example.c -o jack_example
   AlsaFlags="
   -lasound
   -lm
