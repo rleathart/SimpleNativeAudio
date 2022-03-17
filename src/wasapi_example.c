@@ -237,6 +237,9 @@ int main(int argc, char** argv)
   if (Error)
   {
     printf("Failed to find a supported output sample format. Error: 0x%x\n", Error);
+    if (Error == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+      printf("Have you enabled exclusive mode for your output device?\n");
+
     return 1;
   }
 
@@ -250,6 +253,8 @@ int main(int argc, char** argv)
   if (Error)
   {
     printf("Failed to find a supported input sample format. Error: 0x%x\n", Error);
+    if (Error == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+      printf("Have you enabled exclusive mode for your input device?\n");
     return 1;
   }
 
