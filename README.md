@@ -1,7 +1,7 @@
 # SimpleNativeAudio
-Example code for accessing audio hardware with ASIO, CoreAudio, and JACK.
+Example code for accessing audio hardware in C with ASIO, CoreAudio, and JACK.
 
-Tested with Clang 12.0.0 (macOS/Linux) and MSVC 19.29.30133 for x64.
+All example code can be found in the `src` directory.
 
 # Build instructions
 
@@ -45,6 +45,8 @@ sound device (both input and output):
 Sound Settings->Device properties->Additional device properties->Advanced->Allow applications...
 
 # Notes
+
+Tested with Clang 12.0.0 (macOS/Linux) and MSVC 19.29.30133 for x64.
 
 This is just example code, it is by no means robust. Error checking has been
 omitted to make the source easier to read. If you want to add your own checks

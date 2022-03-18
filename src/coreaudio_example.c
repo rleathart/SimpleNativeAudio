@@ -54,14 +54,17 @@ OSStatus CoreAudioGetSampleRate(AudioDeviceID Device, double* SampleRate)
   return Result;
 }
 
-OSStatus CoreAudioGetSampleFormat(AudioDeviceID Device, AudioStreamBasicDescription* Format)
+// NOTE(robin): Scope is either kAudioObjectPropertyScopeInput (for an input device) or
+// kAudioObjectPropertyScopeOutput (for an output device).
+OSStatus CoreAudioGetSampleFormat(AudioDeviceID Device,
+    AudioObjectPropertyScope Scope,
+    AudioStreamBasicDescription* Format)
 {
   AudioObjectPropertyAddress Property =
   {
-    // TODO(robin): This should probably be kAudioStreamPropertyVirtualFormat
-    kAudioDevicePropertyStreamFormat,
+    kAudioStreamPropertyVirtualFormat,
 
-    kAudioObjectPropertyScopeGlobal,
+    Scope,
     kAudioObjectPropertyElementMaster,
   };
 
@@ -106,8 +109,10 @@ OSStatus CoreAudioGetDefaultInputDevice(AudioDeviceID* Device)
 float MicBuffer[512];
 int MicIndex;
 
-// IMPORTANT(robin): You may need to give microphone permissions to this program or
-// run as root to be able to access the microphone samples.
+// IMPORTANT(robin): You need to run this program from a process that has microphone
+// permissions in order to access the microphone samples since this program will not
+// generate a permissons popup. e.g. you can grant Terminal.app microphone permissions
+// in system preferences.
 OSStatus AudioInputCallback(AudioDeviceID Device,
                   const AudioTimeStamp*   Now,
                   const AudioBufferList*  InputData,
@@ -120,7 +125,9 @@ OSStatus AudioInputCallback(AudioDeviceID Device,
   CoreAudioGetBufferSize(Device, &FrameCount);
 
   AudioStreamBasicDescription StreamFormat = {0};
-  CoreAudioGetSampleFormat(Device, &StreamFormat);
+  OSStatus Error = CoreAudioGetSampleFormat(Device, kAudioObjectPropertyScopeInput, &StreamFormat);
+
+  assert(!Error && "Failed to get input device sample format");
 
   UInt32 StreamIsFloat = StreamFormat.mFormatFlags & kAudioFormatFlagIsFloat;
   UInt32 SampleRate = StreamFormat.mSampleRate;
@@ -136,6 +143,7 @@ OSStatus AudioInputCallback(AudioDeviceID Device,
     {
       int SampleIndex = FrameIndex * ChannelCount + ChannelIndex;
       float Sample = InputBuffer[SampleIndex];
+
       if (ChannelIndex == MicChannelIndex)
         MicBuffer[MicIndex++] = Sample;
     }
@@ -153,7 +161,9 @@ OSStatus AudioOutputCallback(AudioDeviceID Device,
                   void*                    UserData)
 {
   AudioStreamBasicDescription StreamFormat = {0};
-  CoreAudioGetSampleFormat(Device, &StreamFormat);
+  OSStatus Error = CoreAudioGetSampleFormat(Device, kAudioObjectPropertyScopeOutput, &StreamFormat);
+
+  assert(!Error && "Failed to get output device sample format");
 
   UInt32 StreamIsFloat = StreamFormat.mFormatFlags & kAudioFormatFlagIsFloat;
   UInt32 SampleRate = StreamFormat.mSampleRate;
@@ -163,7 +173,7 @@ OSStatus AudioOutputCallback(AudioDeviceID Device,
   if (!StreamIsFloat || BytesPerSample != 4)
   {
     // TODO(robin): Does CoreAudio ever deal with anything that isn't 32 bit float?
-    printf("Unsupported stream format! (%d bit %s)\n",
+    printf("\n*** Unsupported stream format! (%d bit %s) ***\n\n",
         BytesPerSample * 8, StreamIsFloat ? "float" : "int");
     assert(0);
   }
@@ -173,7 +183,7 @@ OSStatus AudioOutputCallback(AudioDeviceID Device,
   static float Phase[2];
   float PhaseDelta[] =
   {
-    220.0/SampleRate,
+    220.0/SampleRate, // NOTE(robin): Frequency/SampleRate
     330.0/SampleRate,
   };
 
@@ -189,16 +199,17 @@ OSStatus AudioOutputCallback(AudioDeviceID Device,
         Phase[i] -= 1;
     }
 
-    UInt32 SampleIndex = StreamFormat.mChannelsPerFrame * i;
-
     // NOTE(robin): We use SampleIndex and the magical indices 0 and 1 here because
     // the samples are interleaved. i.e. Left Right Left Right
+    UInt32 SampleIndex = StreamFormat.mChannelsPerFrame * i;
+
     float Volume = 0.2;
     OutputBuffer[SampleIndex + 0] = Volume * sin(Phase[0] * 2 * M_PI); // NOTE(robin): Left
     OutputBuffer[SampleIndex + 1] = Volume * sin(Phase[1] * 2 * M_PI); // NOTE(robin): Right
 
-    OutputBuffer[SampleIndex + 0] = MicBuffer[i];
-    OutputBuffer[SampleIndex + 1] = MicBuffer[i];
+    // NOTE(robin): Uncomment to hear input instead
+    // OutputBuffer[SampleIndex + 0] = MicBuffer[i];
+    // OutputBuffer[SampleIndex + 1] = MicBuffer[i];
   }
 
   return 0;
@@ -209,6 +220,7 @@ int main(int argc, char* argv[])
   AudioDeviceID OutputDeviceID = 0;
   AudioDeviceID InputDeviceID = 0;
 
+  // NOTE(robin): These are the devices you have selected as default in sound preferences
   CoreAudioGetDefaultOutputDevice(&OutputDeviceID);
   CoreAudioGetDefaultInputDevice(&InputDeviceID);
 
@@ -217,7 +229,7 @@ int main(int argc, char* argv[])
   printf("Default output buffer size: %d\n", BufferSize);
 
   // NOTE(robin): Now override the default buffer size to anything you want
-  BufferSize = 64;
+  BufferSize = 128;
   CoreAudioSetBufferSize(OutputDeviceID, BufferSize);
   CoreAudioSetBufferSize(InputDeviceID, BufferSize);
 
@@ -231,9 +243,11 @@ int main(int argc, char* argv[])
   AudioDeviceIOProcID OutputIOProcID = NULL;
   AudioDeviceIOProcID InputIOProcID = NULL;
 
+  // NOTE(robin): Register the callbacks
   AudioDeviceCreateIOProcID(OutputDeviceID, AudioOutputCallback, 0, &OutputIOProcID);
   AudioDeviceCreateIOProcID(InputDeviceID, AudioInputCallback, 0, &InputIOProcID);
 
+  // NOTE(robin): Tell the hardware to start calling our callbacks
   AudioDeviceStart(OutputDeviceID, OutputIOProcID);
   AudioDeviceStart(InputDeviceID, InputIOProcID);
 
