@@ -1,5 +1,6 @@
 # SimpleNativeAudio
-Example code for accessing audio hardware in C with ASIO, CoreAudio, and JACK.
+Example code for accessing audio hardware in C with ASIO, WASAPI, CoreAudio,
+JACK and ALSA.
 
 All example code can be found in the `src` directory.
 
