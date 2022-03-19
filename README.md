@@ -16,16 +16,16 @@ instructions on your platform.
 ## macOS/Linux:
 
 ```bash
-cd path/to/this/repo         (e.g. cd /Users/username/Downloads/SimpleNativeAudio)
+cd path/to/this/repo         # e.g. cd /Users/username/Downloads/SimpleNativeAudio
 sh build.sh
 ```
 
 You can then run the examples with
 
 ```bash
-build/coreaudio_example             (for mac)
-build/jack_example                  (for linux)
-build/alsa_example                  (for linux if you don't have a JACK server)
+build/coreaudio_example             # for mac
+build/jack_example                  # for linux
+build/alsa_example                  # for linux if you don't have a JACK server
 ```
 
 Note for macOS that if you want your program to be able to get input from the
