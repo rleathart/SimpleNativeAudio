@@ -8,29 +8,24 @@ pushd build > /dev/null
 
 CommonFlags="
 -g
+-lm
 "
 
 if [ `uname` == "Darwin" ]; then
-  CoreAudioFlags="
-  -framework CoreAudio
-  "
+  CoreAudioFlags="-framework CoreAudio"
   clang $CommonFlags $CoreAudioFlags ../src/coreaudio_example.c -o coreaudio_example
+  let ErrorCode+=$?
 fi
 
 if [ `uname` == "Linux" ]; then
-  JackFlags="
-  -ljack
-  -lm
-  "
+  JackFlags="-ljack"
   clang $CommonFlags $JackFlags ../src/jack_example.c -o jack_example
-  AlsaFlags="
-  -lasound
-  -lm
-  "
-  clang $CommonFlags $AlsaFlags ../src/alsa_example.c -o alsa_example
-fi
+  let ErrorCode+=$?
 
-ErrorCode=$?
+  AlsaFlags="-lasound"
+  clang $CommonFlags $AlsaFlags ../src/alsa_example.c -o alsa_example
+  let ErrorCode+=$?
+fi
 
 popd > /dev/null
 

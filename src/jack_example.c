@@ -12,15 +12,6 @@ typedef struct
   jack_client_t* JackClient;
 } jack_callback_data;
 
-// NOTE(robin): This needs to be a global sadly so it can be accessed in the
-// SignalHandler
-jack_callback_data JackData;
-
-void OnJackShutdown(void* Context)
-{
-  exit(1);
-}
-
 int AudioCallback(uint32_t FrameCount, void* Context)
 {
   jack_callback_data* JackData = Context;
@@ -61,12 +52,12 @@ int AudioCallback(uint32_t FrameCount, void* Context)
 int main(int argc, char** argv)
 {
   jack_status_t JackStatus;
+  jack_callback_data JackData;
 
   JackData.JackClient = jack_client_open("SimpleNativeAudio", JackNullOption, &JackStatus, 0);
   assert(JackData.JackClient);
 
   jack_set_process_callback(JackData.JackClient, AudioCallback, &JackData);
-  jack_on_shutdown(JackData.JackClient, OnJackShutdown, 0);
 
   uint32_t BufferSize = jack_get_buffer_size(JackData.JackClient);
   printf("Default buffer size is: %d\n", BufferSize);
